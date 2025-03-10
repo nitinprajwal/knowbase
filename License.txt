@@ -1,0 +1,18 @@
+Nitin Prajwal R. Public Reference License (NPR-PRL)
+Version 1.0
+Copyright © 2025 Nitin Prajwal R. All Rights Reserved.
+1. Purpose
+This software is made publicly available for reference purposes only. Viewing the source code is permitted, but copying, modifying, distributing, or using it in any form is strictly prohibited unless explicit written permission is granted by the author.
+2. Restrictions
+
+You may not copy, modify, or distribute this software or any part of it.
+You may not use this software for commercial, educational, or personal projects.
+You may not create derivative works based on this software.
+You may not claim ownership or authorship of this software.
+
+3. Permitted Use
+
+You may view the source code on publicly available platforms (such as GitHub) for reference only.
+
+4. Disclaimer
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.

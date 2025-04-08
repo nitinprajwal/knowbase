@@ -93,6 +93,18 @@ export const getPageByTitle = async (title: string): Promise<{ page: Page | null
 };
 
 export const createPage = async (title: string, content: string, userId?: string): Promise<{ page: Page | null, error: any }> => {
+  // First try to get the page again to handle race conditions
+  const { data: existingPage } = await supabase
+    .from('pages')
+    .select('*')
+    .eq('title', title)
+    .single();
+
+  if (existingPage) {
+    return { page: existingPage as Page, error: null };
+  }
+
+  // If page doesn't exist, create it
   const { data, error } = await supabase
     .from('pages')
     .insert([

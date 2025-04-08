@@ -66,6 +66,17 @@ const ContentPage: React.FC = () => {
         );
         
         if (createError) {
+          // If we get a unique constraint violation, try to fetch the page again
+          if (createError.code === '23505') { // PostgreSQL unique violation code
+            const { page: existingPage } = await getPageByTitle(decodeURIComponent(title));
+            if (existingPage) {
+              setPage(existingPage);
+              setContent(existingPage.content);
+              await incrementPageViews(existingPage.id);
+              setIsLoading(false);
+              return;
+            }
+          }
           throw new Error(createError.message);
         }
         

@@ -10,7 +10,10 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-2KELG2K719');
+      gtag('config', 'G-2KELG2K719', {
+        cookie_domain: 'knowbasewiki.netlify.app',
+        cookie_flags: 'SameSite=None;Secure'
+      });
     </script>
     <title>KnowBase - Dynamic Knowledge Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">

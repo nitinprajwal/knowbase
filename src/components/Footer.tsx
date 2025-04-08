@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
             <p className="text-gray-700">© 2025 KnowBase. All rights reserved.</p>
             <div className="mt-2 text-sm text-gray-600">
               <p>Created by:</p>
-              <p>Nitin Prajwal R</p>
+              <p>Jalaja R</p>
             </div>
           </div>
           

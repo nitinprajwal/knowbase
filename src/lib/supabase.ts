@@ -137,8 +137,13 @@ export const updatePage = async (id: string, content: string, header_image?: str
 };
 
 export const incrementPageViews = async (id: string): Promise<{ success: boolean, error: any }> => {
-  const { error } = await supabase.rpc('increment_page_views', { page_id: id });
-  return { success: !error, error };
+  try {
+    const { error } = await supabase.rpc('increment_page_views', { page_id: id });
+    return { success: !error, error };
+  } catch (error) {
+    console.error('Error incrementing page views:', error);
+    return { success: false, error };
+  }
 };
 
 // Visitor stats functions

@@ -19,6 +19,7 @@ const ContentPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [hasIncrementedViews, setHasIncrementedViews] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -48,8 +49,13 @@ const ContentPage: React.FC = () => {
         if (page) {
           setPage(page);
           setContent(page.content);
-          // Increment view count
-          await incrementPageViews(page.id);
+          
+          // Only increment views if we haven't done it yet
+          if (!hasIncrementedViews) {
+            await incrementPageViews(page.id);
+            setHasIncrementedViews(true);
+          }
+          
           setIsLoading(false);
           return;
         }
@@ -94,7 +100,7 @@ const ContentPage: React.FC = () => {
     };
 
     fetchOrGeneratePage();
-  }, [title, navigate, user]);
+  }, [title, navigate, user, hasIncrementedViews]);
 
   const handleEdit = () => {
     setIsEditing(true);

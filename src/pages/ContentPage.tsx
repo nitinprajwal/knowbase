@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPageByTitle, createPage, updatePage, incrementPageViews, getCurrentUser } from '../lib/supabase';
 import { generateContent } from '../lib/groq';
@@ -6,8 +6,17 @@ import { supabase } from '../lib/supabase';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ContentRenderer from '../components/ContentRenderer';
+import PageFeedbackSection from '../components/PageFeedback';
+import PageRatingSection from '../components/PageRating';
+import { Toast, ScrollToFeedback } from '../components/Animations';
+import { AnimatePresence } from 'framer-motion';
 import { Edit, Save, Loader, AlertCircle } from 'lucide-react';
 import type { Page, User } from '../types';
+
+interface ToastState {
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
 
 const ContentPage: React.FC = () => {
   const { title } = useParams<{ title: string }>();
@@ -20,6 +29,9 @@ const ContentPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [hasIncrementedViews, setHasIncrementedViews] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [headerImage, setHeaderImage] = useState<string>('');
+  const feedbackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -106,8 +118,6 @@ const ContentPage: React.FC = () => {
     setIsEditing(true);
   };
 
-  const [headerImage, setHeaderImage] = useState<string>('');
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -136,6 +146,15 @@ const ContentPage: React.FC = () => {
     }
   };
 
+  const scrollToFeedback = () => {
+    feedbackRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleSave = async () => {
     if (!page) return;
     
@@ -152,9 +171,11 @@ const ContentPage: React.FC = () => {
       if (updatedPage) {
         setPage(updatedPage);
         setIsEditing(false);
+        showToast('Changes saved successfully!', 'success');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to save changes');
+      showToast('Failed to save changes', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -233,7 +254,15 @@ const ContentPage: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-900">{decodeURIComponent(title || '')}</h1>
                 
-                <div>
+                <div className="flex items-center space-x-4">
+                  {page && (
+                    <PageRatingSection
+                      pageId={page.id}
+                      initialThumbsUp={page.thumbs_up}
+                      initialThumbsDown={page.thumbs_down}
+                    />
+                  )}
+                  
                   {user ? (
                     isEditing ? (
                       <button
@@ -274,10 +303,26 @@ const ContentPage: React.FC = () => {
               )}
             </div>
           </div>
+
+          <div ref={feedbackRef}>
+            {page && <PageFeedbackSection pageId={page.id} />}
+          </div>
         </div>
       </main>
       
       <Footer />
+
+      <AnimatePresence>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {user && <ScrollToFeedback onClick={scrollToFeedback} />}
     </div>
   );
 };

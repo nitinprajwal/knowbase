@@ -181,4 +181,120 @@ export const subscribeToVisitorStats = (callback: (stats: VisitorStats) => void)
     .subscribe();
 };
 
+// Password reset functions
+export const resetPassword = async (email: string) => {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  return { data, error };
+};
+
+export const updatePassword = async (newPassword: string) => {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+  return { data, error };
+};
+
+// Feedback functions
+export const createFeedback = async (pageId: string, content: string, userId: string) => {
+  const { data, error } = await supabase
+    .from('page_feedback')
+    .insert([{ page_id: pageId, content, user_id: userId }])
+    .select()
+    .single();
+  
+  return { feedback: data, error };
+};
+
+export const updateFeedback = async (feedbackId: string, content: string) => {
+  const { data, error } = await supabase
+    .from('page_feedback')
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq('id', feedbackId)
+    .select()
+    .single();
+  
+  return { feedback: data, error };
+};
+
+export const deleteFeedback = async (feedbackId: string) => {
+  const { error } = await supabase
+    .from('page_feedback')
+    .delete()
+    .eq('id', feedbackId);
+  
+  return { error };
+};
+
+export const getFeedbackByPageId = async (pageId: string) => {
+  const { data, error } = await supabase
+    .from('page_feedback')
+    .select(`
+      *,
+      users:user_id (
+        email
+      )
+    `)
+    .eq('page_id', pageId)
+    .order('created_at', { ascending: false });
+  
+  // Transform the data to match our PageFeedback type
+  const feedback = data?.map(item => ({
+    ...item,
+    user: item.users
+  }));
+  
+  return { feedback, error };
+};
+
+// Rating functions
+export const rateContent = async (pageId: string, rating: 1 | -1, userId: string) => {
+  const { data: existingRating } = await supabase
+    .from('page_ratings')
+    .select()
+    .eq('page_id', pageId)
+    .eq('user_id', userId)
+    .single();
+
+  if (existingRating) {
+    if (existingRating.rating === rating) {
+      // Remove rating if clicking the same button
+      const { error } = await supabase
+        .from('page_ratings')
+        .delete()
+        .eq('id', existingRating.id);
+      return { rating: null, error };
+    } else {
+      // Update rating if changing from thumbs up to down or vice versa
+      const { data, error } = await supabase
+        .from('page_ratings')
+        .update({ rating })
+        .eq('id', existingRating.id)
+        .select()
+        .single();
+      return { rating: data, error };
+    }
+  } else {
+    // Create new rating
+    const { data, error } = await supabase
+      .from('page_ratings')
+      .insert([{ page_id: pageId, rating, user_id: userId }])
+      .select()
+      .single();
+    return { rating: data, error };
+  }
+};
+
+export const getUserRating = async (pageId: string, userId: string) => {
+  const { data, error } = await supabase
+    .from('page_ratings')
+    .select()
+    .eq('page_id', pageId)
+    .eq('user_id', userId)
+    .single();
+  
+  return { rating: data, error };
+};
+
 export default supabase;

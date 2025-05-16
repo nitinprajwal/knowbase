@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ContentRenderer from '../components/ContentRenderer';
-import PageFeedbackSection from '../components/PageFeedback';
+import { PageFeedbackSection } from '../components/PageFeedback';
 import PageRatingSection from '../components/PageRating';
 import { Toast, ScrollToFeedback } from '../components/Animations';
 import { AnimatePresence } from 'framer-motion';

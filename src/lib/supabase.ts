@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import type { User, Page, VisitorStats } from '../types';
-import { useState, useEffect } from 'react';
+import type { Page, VisitorStats } from '../types';
 import type { User } from '@supabase/supabase-js';
+import { useState, useEffect } from 'react';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

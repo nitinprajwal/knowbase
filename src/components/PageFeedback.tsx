@@ -27,17 +27,29 @@ const PageFeedbackSection: React.FC<PageFeedbackProps> = ({ pageId }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    loadFeedback();
-  }, [pageId]);
+    setIsLoading(true);
+    loadFeedback().finally(() => {
+      setIsLoading(false);
+    });
+  }, [pageId, loadFeedback]);
 
-  const loadFeedback = async () => {
-    const { feedback, error } = await getFeedbackByPageId(pageId);
-    if (error) {
+  const loadFeedback = React.useCallback(async () => {
+    try {
+      const { feedback, error } = await getFeedbackByPageId(pageId);
+      if (error) {
+        console.error('Error loading feedback:', error);
+        setError('Failed to load feedback');
+        setFeedback([]);
+      } else {
+        setError(null);
+        setFeedback(feedback || []);
+      }
+    } catch (err) {
+      console.error('Error in loadFeedback:', err);
       setError('Failed to load feedback');
-    } else {
-      setFeedback(feedback || []);
+      setFeedback([]);
     }
-  };
+  }, [pageId]);
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +83,25 @@ const PageFeedbackSection: React.FC<PageFeedbackProps> = ({ pageId }) => {
       setError(err.message || 'Failed to delete feedback');
     }
   };
+
+  // Add loading state UI
+  if (isLoading) {
+    return (
+      <motion.div 
+        className="mt-8 bg-white rounded-lg shadow-md p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h2 className="text-2xl font-bold mb-6 flex items-center">
+          <MessageCircle className="h-6 w-6 mr-2 text-[#eeb76b]" />
+          Feedback
+        </h2>
+        <div className="flex justify-center py-8">
+          <div className="animate-pulse text-gray-500">Loading feedback...</div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div 

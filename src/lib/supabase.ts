@@ -228,73 +228,89 @@ export const deleteFeedback = async (feedbackId: string) => {
 };
 
 export const getFeedbackByPageId = async (pageId: string) => {
-  const { data, error } = await supabase
-    .from('page_feedback')
-    .select(`
-      *,
-      users:user_id (
-        email
-      )
-    `)
-    .eq('page_id', pageId)
-    .order('created_at', { ascending: false });
-  
-  // Transform the data to match our PageFeedback type
-  const feedback = data?.map(item => ({
-    ...item,
-    user: item.users
-  }));
-  
-  return { feedback, error };
+  try {
+    const { data, error } = await supabase
+      .from('page_feedback')
+      .select(`
+        *,
+        user:user_id (
+          email
+        )
+      `)
+      .eq('page_id', pageId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Supabase error fetching feedback:', error);
+      throw error;
+    }
+
+    // Transform the data to match our PageFeedback type
+    const feedback = data?.map(item => ({
+      ...item,
+      user: item.user
+    }));
+
+    return { feedback, error: null };
+  } catch (error) {
+    console.error('Error in getFeedbackByPageId:', error);
+    return { feedback: [], error };
+  }
 };
 
 // Rating functions
-export const rateContent = async (pageId: string, rating: 1 | -1, userId: string) => {
-  const { data: existingRating } = await supabase
+export const getUserRating = async (pageId: string, userId: string) => {
+  const { data: rating, error } = await supabase
     .from('page_ratings')
-    .select()
+    .select('*')
     .eq('page_id', pageId)
     .eq('user_id', userId)
     .single();
+  
+  return { rating, error };
+};
+
+export const rateContent = async (pageId: string, value: 1 | -1, userId: string) => {
+  // Check if user already rated
+  const { rating: existingRating } = await getUserRating(pageId, userId);
 
   if (existingRating) {
-    if (existingRating.rating === rating) {
-      // Remove rating if clicking the same button
+    // If same rating, remove it
+    if ((value === 1 && existingRating.like_count === 1) || 
+        (value === -1 && existingRating.dislike_count === 1)) {
       const { error } = await supabase
         .from('page_ratings')
         .delete()
         .eq('id', existingRating.id);
+      
       return { rating: null, error };
-    } else {
-      // Update rating if changing from thumbs up to down or vice versa
-      const { data, error } = await supabase
-        .from('page_ratings')
-        .update({ rating })
-        .eq('id', existingRating.id)
-        .select()
-        .single();
-      return { rating: data, error };
     }
-  } else {
-    // Create new rating
-    const { data, error } = await supabase
+
+    // Update existing rating
+    const { data: rating, error } = await supabase
       .from('page_ratings')
-      .insert([{ page_id: pageId, rating, user_id: userId }])
+      .update({
+        like_count: value === 1 ? 1 : 0,
+        dislike_count: value === -1 ? 1 : 0
+      })
+      .eq('id', existingRating.id)
       .select()
       .single();
-    return { rating: data, error };
+
+    return { rating, error };
   }
-};
 
-export const getUserRating = async (pageId: string, userId: string) => {
-  const { data, error } = await supabase
+  // Create new rating
+  const { data: rating, error } = await supabase
     .from('page_ratings')
+    .insert([{
+      page_id: pageId,
+      user_id: userId,
+      like_count: value === 1 ? 1 : 0,
+      dislike_count: value === -1 ? 1 : 0
+    }])
     .select()
-    .eq('page_id', pageId)
-    .eq('user_id', userId)
     .single();
-  
-  return { rating: data, error };
-};
 
-export default supabase;
+  return { rating, error };
+};

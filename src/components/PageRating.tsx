@@ -45,7 +45,7 @@ const PageRatingSection: React.FC<PageRatingProps> = ({
     setUserRating(rating);
   };
 
-  const handleRating = async (rating: 1 | -1) => {
+  const handleRating = async (value: 1 | -1) => {
     if (!user) {
       window.location.href = '/login';
       return;
@@ -53,25 +53,25 @@ const PageRatingSection: React.FC<PageRatingProps> = ({
 
     setIsLoading(true);
     try {
-      const { rating: newRating } = await rateContent(pageId, rating, user.id);
+      const { rating: newRating } = await rateContent(pageId, value, user.id);
       
       // Update the counts based on the action taken
       if (!userRating) {
         // New rating
-        if (rating === 1) setThumbsUp(prev => prev + 1);
+        if (value === 1) setThumbsUp(prev => prev + 1);
         else setThumbsDown(prev => prev + 1);
       } else if (!newRating) {
         // Rating removed
-        if (userRating.rating === 1) setThumbsUp(prev => prev - 1);
-        else setThumbsDown(prev => prev - 1);
-      } else if (userRating.rating !== newRating.rating) {
+        if (userRating.like_count === 1) setThumbsUp(prev => prev - 1);
+        else if (userRating.dislike_count === 1) setThumbsDown(prev => prev - 1);
+      } else {
         // Rating changed
-        if (newRating.rating === 1) {
+        if (newRating.like_count === 1) {
           setThumbsUp(prev => prev + 1);
-          setThumbsDown(prev => prev - 1);
-        } else {
-          setThumbsUp(prev => prev - 1);
+          if (userRating.dislike_count === 1) setThumbsDown(prev => prev - 1);
+        } else if (newRating.dislike_count === 1) {
           setThumbsDown(prev => prev + 1);
+          if (userRating.like_count === 1) setThumbsUp(prev => prev - 1);
         }
       }
       
@@ -94,13 +94,13 @@ const PageRatingSection: React.FC<PageRatingProps> = ({
           whileHover="hover"
           whileTap="tap"
           className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-            userRating?.rating === 1
+            userRating?.like_count === 1
               ? 'bg-green-100 text-green-700'
               : 'hover:bg-gray-100'
           }`}
         >
           <ThumbsUp className={`h-5 w-5 ${
-            userRating?.rating === 1 ? 'text-green-600' : 'text-gray-500'
+            userRating?.like_count === 1 ? 'text-green-600' : 'text-gray-500'
           }`} />
           <motion.span
             key={thumbsUp}
@@ -123,13 +123,13 @@ const PageRatingSection: React.FC<PageRatingProps> = ({
           whileHover="hover"
           whileTap="tap"
           className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-            userRating?.rating === -1
+            userRating?.dislike_count === 1
               ? 'bg-red-100 text-red-700'
               : 'hover:bg-gray-100'
           }`}
         >
           <ThumbsDown className={`h-5 w-5 ${
-            userRating?.rating === -1 ? 'text-red-600' : 'text-gray-500'
+            userRating?.dislike_count === 1 ? 'text-red-600' : 'text-gray-500'
           }`} />
           <motion.span
             key={thumbsDown}

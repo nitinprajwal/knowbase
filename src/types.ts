@@ -35,7 +35,8 @@ export interface PageRating {
   id: string;
   page_id: string;
   user_id: string;
-  rating: 1 | -1;
+  like_count: number;
+  dislike_count: number;
   created_at: string;
 }
 

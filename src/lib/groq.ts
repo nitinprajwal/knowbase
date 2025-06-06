@@ -29,6 +29,7 @@ export const generateContent = async (query: string): Promise<string> => {
   ];
 
   try {
+    console.log('Generating content for query:', query);
     const response = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
@@ -47,6 +48,11 @@ export const generateContent = async (query: string): Promise<string> => {
         }
       }
     );
+
+    if (!response.data || !response.data.choices || !response.data.choices[0]) {
+      console.error('Invalid response format:', response.data);
+      throw new Error('Invalid response from Groq API');
+    }
 
     return response.data.choices[0].message.content;
   } catch (error) {

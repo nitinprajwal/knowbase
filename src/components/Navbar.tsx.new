@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User as UserIcon, LogOut, Menu, X, Brain, Lightbulb } from 'lucide-react';
+import { Book, Search, User as UserIcon, LogOut, Menu, X, Brain, Lightbulb } from 'lucide-react';
 import { getCurrentUser, signOut } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Transition } from '@headlessui/react';
 import type { User } from '../types';
 
 const LogoIcon: React.FC = () => (
-  <div className="relative w-8 h-8 mx-1">
+  <div className="relative w-8 h-8 mr-1">
     <motion.div
       initial={{ opacity: 0.5 }}
       animate={{ opacity: [0.5, 1, 0.5] }}
@@ -232,10 +233,12 @@ const Navbar: React.FC = () => {
                 {/* Mobile actions */}
                 {user ? (
                   <div className="space-y-2 p-2">
-                    <p className="text-sm text-secondary-600 text-center">{user.email}</p>
+                    <p className="text-sm text-secondary-600 font-medium px-2">
+                      {user.email}
+                    </p>
                     <button
                       onClick={handleSignOut}
-                      className="w-full btn-primary flex items-center justify-center"
+                      className="w-full flex items-center px-4 py-2 text-sm btn-primary"
                     >
                       <LogOut className="h-4 w-4 mr-2" />
                       Sign Out
@@ -245,14 +248,14 @@ const Navbar: React.FC = () => {
                   <div className="space-y-2 p-2">
                     <Link
                       to="/login"
-                      className="w-full btn-secondary flex items-center justify-center"
+                      className="w-full flex items-center px-4 py-2 text-sm btn-secondary"
                     >
                       <UserIcon className="h-4 w-4 mr-2" />
                       Login
                     </Link>
                     <Link
                       to="/signup"
-                      className="w-full btn-primary flex items-center justify-center"
+                      className="w-full flex items-center px-4 py-2 text-sm btn-primary"
                     >
                       Sign Up
                     </Link>

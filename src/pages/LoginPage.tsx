@@ -35,23 +35,19 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f9f5f0]">
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      
       <main className="flex-grow flex items-center justify-center py-12">
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+        <div className="w-full max-w-md card space-y-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900">Sign in to KnowBase</h2>
             <p className="mt-2 text-sm text-gray-600">
               Or{' '}
-              <Link to="/signup" className="font-medium text-[#eeb76b] hover:text-[#e9a84c]">
-                create a new account
-              </Link>
+              <Link to="/signup" className="font-medium text-primary-400 hover:text-primary-500">create a new account</Link>
             </p>
           </div>
-          
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-5 w-5 text-red-400" />
@@ -62,7 +58,6 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
           )}
-          
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
@@ -73,7 +68,7 @@ const LoginPage: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-[#eeb76b] focus:border-[#eeb76b] focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-t-lg relative block w-full px-3 py-3 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 focus:z-10 sm:text-sm"
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -87,38 +82,31 @@ const LoginPage: React.FC = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-[#eeb76b] focus:border-[#eeb76b] focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-b-lg relative block w-full px-3 py-3 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 focus:z-10 sm:text-sm"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>
-
             <div className="flex items-center justify-between">
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-[#eeb76b] hover:text-[#e9a84c]">
-                  Forgot your password?
-                </Link>
+                <Link to="/forgot-password" className="font-medium text-primary-400 hover:text-primary-500">Forgot your password?</Link>
               </div>
             </div>
-
             <div>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#eeb76b] hover:bg-[#e9a84c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#eeb76b]"
+                className="btn-primary w-full flex justify-center items-center gap-2"
               >
-                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                  <LogIn className="h-5 w-5 text-[#e9a84c] group-hover:text-[#eeb76b]" />
-                </span>
+                <LogIn className="h-5 w-5" />
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </button>
             </div>
           </form>
         </div>
       </main>
-      
       <Footer />
     </div>
   );

@@ -9,7 +9,7 @@ import ContentRenderer from '../components/ContentRenderer';
 import { PageFeedbackSection } from '../components/PageFeedback';
 import PageRatingSection from '../components/PageRating';
 import { Toast, ScrollToFeedback } from '../components/Animations';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Edit, Save, Loader, AlertCircle } from 'lucide-react';
 import type { Page, User } from '../types';
 
@@ -56,13 +56,12 @@ const ContentPage: React.FC = () => {
       
       try {
         // Try to fetch the page from Supabase
-        const { page, error } = await getPageByTitle(decodeURIComponent(title));
+        const { page, error } = await getPageByTitle(decodeURIComponent(title!));
         
         if (page) {
           setPage(page);
           setContent(page.content);
           
-          // Only increment views if we haven't done it yet
           if (!hasIncrementedViews) {
             await incrementPageViews(page.id);
             setHasIncrementedViews(true);
@@ -74,37 +73,60 @@ const ContentPage: React.FC = () => {
         
         // If page doesn't exist, generate content
         setIsGenerating(true);
-        const generatedContent = await generateContent(decodeURIComponent(title));
         
-        // Create new page in Supabase
-        const { page: newPage, error: createError } = await createPage(
-          decodeURIComponent(title),
-          generatedContent,
-          user?.id
-        );
-        
-        if (createError) {
-          // If we get a unique constraint violation, try to fetch the page again
-          if (createError.code === '23505') { // PostgreSQL unique violation code
-            const { page: existingPage } = await getPageByTitle(decodeURIComponent(title));
-            if (existingPage) {
-              setPage(existingPage);
-              setContent(existingPage.content);
-              await incrementPageViews(existingPage.id);
-              setIsLoading(false);
+        try {
+          const generatedContent = await generateContent(decodeURIComponent(title!));
+          
+          if (!generatedContent) {
+            throw new Error('Failed to generate content - no content received');
+          }
+
+          // Set the content immediately so user can see it
+          setContent(generatedContent);
+
+          // Only try to save to database if we have a user
+          if (user?.id) {
+            // Create new page in Supabase
+            const { page: newPage, error: createError } = await createPage(
+              decodeURIComponent(title!),
+              generatedContent,
+              user.id
+            );
+            
+            if (createError) {
+              // If database error occurs, still show content but warn about saving
+              console.error('Failed to save page:', createError);
+              setToast({ 
+                message: 'Content generated but could not be saved. Please try saving again later.', 
+                type: 'info' 
+              });
               return;
             }
+            
+            if (newPage) {
+              setPage(newPage);
+              setContent(newPage.content);
+            }
+          } else {
+            // No user logged in - just display content without saving
+            setToast({ 
+              message: 'Login to save this page and contribute to the knowledge base', 
+              type: 'info' 
+            });
           }
-          throw new Error(createError.message);
+
+        } catch (genError) {
+          const errorMessage = genError instanceof Error ? genError.message : 
+            'Failed to generate content. Please try again later.';
+          console.error('Content generation error:', genError);
+          setError(errorMessage);
+          throw genError;
         }
-        
-        if (newPage) {
-          setPage(newPage);
-          setContent(newPage.content);
-        }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load or generate content');
-        console.error('Error:', err);
+      } catch (err) {
+        const displayError = err instanceof Error ? err.message : 
+          'Failed to load or generate content. Please try again later.';
+        setError(displayError);
+        console.error('Page error:', err);
       } finally {
         setIsLoading(false);
         setIsGenerating(false);
@@ -183,20 +205,25 @@ const ContentPage: React.FC = () => {
 
   if (isLoading || isGenerating) {
     return (
-      <div className="flex flex-col min-h-screen bg-[#f9f5f0]">
+      <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-grow flex items-center justify-center py-12">
-          <div className="text-center">
-            <Loader className="h-12 w-12 text-[#eeb76b] animate-spin mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-700">
+          <motion.div 
+            className="text-center card bg-white/70"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Loader className="h-12 w-12 text-primary-500 animate-spin mx-auto mb-4" />
+            <h2 className="text-2xl font-semibold text-primary-900">
               {isGenerating ? `Generating content for "${decodeURIComponent(title || '')}"...` : 'Loading...'}
             </h2>
             {isGenerating && (
-              <p className="mt-2 text-gray-500">
+              <p className="mt-2 text-primary-600">
                 This may take a few moments as we create comprehensive content for you.
               </p>
             )}
-          </div>
+          </motion.div>
         </main>
         <Footer />
       </div>
@@ -204,13 +231,17 @@ const ContentPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f9f5f0]">
+    <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      <main className="flex-grow py-8">
+      <main className="flex-grow py-8 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+            <motion.div 
+              className="bg-red-50/80 backdrop-blur-sm border-l-4 border-red-400 p-4 mb-6 rounded-r-xl"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
               <div className="flex">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-5 w-5 text-red-400" />
@@ -219,42 +250,63 @@ const ContentPage: React.FC = () => {
                   <p className="text-sm text-red-700">{error}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
           
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <motion.div 
+            className="card overflow-hidden bg-white/90"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
             {(page?.header_image || headerImage) && (
-              <div className="w-full h-64 relative">
+              <motion.div 
+                className="w-full h-64 relative"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6 }}
+              >
                 <img
                   src={headerImage || page?.header_image}
                   alt="Header"
                   className="w-full h-full object-cover"
                 />
-              </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              </motion.div>
             )}
+            
             <div className="p-6">
               {isEditing && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Header Image
-                  </label>
+                <motion.div 
+                  className="mb-4"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <label className="block text-sm font-medium text-primary-700 mb-2">Header Image</label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-md file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-[#eeb76b] file:text-white
-                      hover:file:bg-[#e9a84c]"
+                    className="block w-full text-sm text-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer"
                   />
-                </div>
+                </motion.div>
               )}
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">{decodeURIComponent(title || '')}</h1>
+              
+              <motion.div 
+                className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4"
+                layout
+              >
+                <motion.h1 
+                  className="text-3xl md:text-4xl font-bold bg-gradient-to-br from-primary-700 to-primary-900 bg-clip-text text-transparent"
+                  layout="position"
+                >
+                  {decodeURIComponent(title || '')}
+                </motion.h1>
                 
-                <div className="flex items-center space-x-4">
+                <motion.div 
+                  className="flex items-center space-x-4"
+                  layout="position"
+                >
                   {page && (
                     <PageRatingSection
                       pageId={page.id}
@@ -265,48 +317,69 @@ const ContentPage: React.FC = () => {
                   
                   {user ? (
                     isEditing ? (
-                      <button
+                      <motion.button
                         onClick={handleSave}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        className="btn-primary"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Save Changes
-                      </button>
+                      </motion.button>
                     ) : (
-                      <button
+                      <motion.button
                         onClick={handleEdit}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#eeb76b] hover:bg-[#e9a84c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#eeb76b]"
+                        className="btn-secondary"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Page
-                      </button>
+                      </motion.button>
                     )
                   ) : (
-                    <button
+                    <motion.button
                       onClick={() => navigate('/login')}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="btn-primary"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       Login to Edit
-                    </button>
+                    </motion.button>
                   )}
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
               
               {isEditing ? (
-                <textarea
+                <motion.textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-[70vh] p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#eeb76b] focus:border-[#eeb76b] font-mono text-sm"
+                  className="w-full h-[70vh] p-4 border border-primary-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 font-mono text-sm shadow-sm resize-none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
                 />
               ) : (
-                <ContentRenderer content={content} />
+                <motion.div 
+                  className="prose prose-primary max-w-none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ContentRenderer content={content} />
+                </motion.div>
               )}
             </div>
-          </div>
+          </motion.div>
 
-          <div ref={feedbackRef}>
+          <motion.div 
+            ref={feedbackRef}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
             {page && <PageFeedbackSection pageId={page.id} />}
-          </div>
+          </motion.div>
         </div>
       </main>
       
@@ -314,11 +387,7 @@ const ContentPage: React.FC = () => {
 
       <AnimatePresence>
         {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
+          <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
         )}
       </AnimatePresence>
 

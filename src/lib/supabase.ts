@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Page, VisitorStats } from '../types';
+import type { Page, VisitorStats, DatabaseError, ApiError } from '../types';
 import type { User } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
 
@@ -92,33 +92,58 @@ export const getPageByTitle = async (title: string): Promise<{ page: Page | null
   return { page: data as Page, error };
 };
 
-export const createPage = async (title: string, content: string, userId?: string): Promise<{ page: Page | null, error: any }> => {
-  // First try to get the page again to handle race conditions
-  const { data: existingPage } = await supabase
-    .from('pages')
-    .select('*')
-    .eq('title', title)
-    .single();
+export const createPage = async (title: string, content: string, userId?: string): Promise<{ page: Page | null, error: DatabaseError | null }> => {
+  try {
+    // First try to get the page again to handle race conditions
+    const { data: existingPage } = await supabase
+      .from('pages')
+      .select('*')
+      .eq('title', title)
+      .single();
 
-  if (existingPage) {
-    return { page: existingPage as Page, error: null };
-  }
+    if (existingPage) {
+      return { page: existingPage as Page, error: null };
+    }
 
-  // If page doesn't exist, create it
-  const { data, error } = await supabase
-    .from('pages')
-    .insert([
-      { 
+    // For anonymous users, return a temporary page without saving
+    if (!userId) {
+      const tempPage: Page = {
+        id: 'temp',
+        title,
+        content,
+        views: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        thumbs_up: 0,
+        thumbs_down: 0
+      };
+      return { page: tempPage, error: null };
+    }
+
+    // If user is authenticated, create the page
+    const { data, error } = await supabase
+      .from('pages')
+      .insert([{ 
         title, 
         content, 
         user_id: userId,
-        views: 0
-      }
-    ])
-    .select()
-    .single();
-  
-  return { page: data as Page, error };
+        views: 0,
+        thumbs_up: 0,
+        thumbs_down: 0
+      }])
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error creating page:', error);
+      return { page: null, error: error as DatabaseError };
+    }
+    
+    return { page: data as Page, error: null };
+  } catch (error) {
+    console.error('Error in createPage:', error);
+    return { page: null, error: { message: 'Unexpected error occurred' } };
+  }
 };
 
 export const updatePage = async (id: string, content: string, header_image?: string): Promise<{ page: Page | null, error: any }> => {

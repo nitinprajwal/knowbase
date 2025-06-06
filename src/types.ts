@@ -66,3 +66,15 @@ export interface InputProps {
   id?: string;
   autoComplete?: string;
 }
+
+export interface DatabaseError {
+  code?: string;
+  message: string;
+  details?: string;
+}
+
+export type ApiError = {
+  message: string;
+  status?: number;
+  details?: unknown;
+};

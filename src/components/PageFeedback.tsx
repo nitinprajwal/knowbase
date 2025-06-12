@@ -22,7 +22,6 @@ interface PageFeedbackProps {
 export const PageFeedbackSection: React.FC<PageFeedbackProps> = ({ pageId }) => {
   const [feedback, setFeedback] = useState<PageFeedback[]>([]);
   const [newFeedback, setNewFeedback] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
 
